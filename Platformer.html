@@ -1,0 +1,1381 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta content="width=device-width, initial-scale=1.0, user-scalable=no" name="viewport" />
+  <title>Jungle Survivor (With Start/End Images)</title>
+  <link rel="icon" type="image/png" href="icon.png"> 
+  <style>
+    :root {
+      --primary-bg-color: #1a1a2e;
+      --secondary-bg-color: #16213e;
+      --tertiary-bg-color: #0f3460;
+      --primary-color: #ffffff;
+      --secondary-color: #e94560;
+      --button-bg-gradient: linear-gradient(135deg, #283c86 0%, #45a247 100%);
+      --button-hover-gradient: linear-gradient(135deg, #45a247 0%, #283c86 100%);
+      --font-family: 'Orbitron', sans-serif;
+      --transition-speed: 0.3s;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: var(--font-family);
+      background-color: var(--primary-bg-color);
+      color: var(--primary-color);
+    }
+
+    .screen {
+      display: none;
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background: linear-gradient(135deg, var(--primary-bg-color) 0%, var(--secondary-bg-color) 50%, var(--tertiary-bg-color) 100%);
+      transition: opacity var(--transition-speed) ease-in-out;
+      opacity: 0;
+    }
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      opacity: 1;
+    }
+    #splash-screen, #start-menu-screen {
+      background: url('background-splash.png') no-repeat center center;
+      background-size: cover;
+    }
+
+    #win-screen {
+      background: url('splash-win-164.png') no-repeat center center;
+      background-size: cover;
+      display: none; 
+      text-align: center;
+      color: white;
+    }
+    #game-over-screen {
+      background: url('splash-lose-164.png') no-repeat center center;
+      background-size: cover;
+      display: none; 
+      text-align: center;
+      color: white;
+    }
+    #win-screen.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    #game-over-screen.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #instructions-screen {
+  background: url('comfy_instructionsbackground.png') no-repeat center center;
+  background-size: cover;
+}
+
+#settings-screen {
+  background: url('deepai_settings.png') no-repeat center center;
+  background-size: cover;
+}
+
+ 
+
+
+
+ 
+
+    /* Puzzle Screen */
+    #puzzle-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 200;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+    #puzzle-wrapper, #puzzle-container {
+      max-width: 90vw;
+      max-height: 90vh;
+      display: grid;
+      gap: 2px;
+      touch-action: none; /* We'll handle swipes ourselves. */
+    }
+    #puzzle-container {
+      background-color: #333;
+      box-sizing: border-box;
+      grid-template-columns: repeat(7, 60px);
+      grid-template-rows: repeat(6, 66px);
+    }
+
+    .boundary {
+      position: absolute;
+      background-color: black;
+      pointer-events: none;
+    }
+
+    .block {
+      width: 100%;
+      height: 100%;
+      background-color: #4CAF50;
+      border: 1px solid #fff;
+      cursor: pointer;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .main-block {
+      background-color: #FF5722;
+    }
+
+    .container {
+      text-align: center;
+      max-width: 600px;
+      width: 90%;
+      padding: 20px;
+    }
+    button {
+      background: var(--button-bg-gradient);
+      border: 2px solid var(--secondary-color);
+      border-radius: 8px;
+      color: var(--primary-color);
+      font-family: var(--font-family);
+      font-size: 18px;
+      text-transform: uppercase;
+      text-align: center;
+      text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+      padding: 12px 30px;
+      margin: 20px auto;
+      display: block;
+      width: 80%;
+      max-width: 215px;
+      cursor: pointer;
+      transition: all var(--transition-speed) ease;
+    }
+    button:hover {
+      background: var(--button-hover-gradient);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    #game-title {
+      font-size: 2em;
+      margin-bottom: 30px;
+      text-transform: uppercase;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+      color: yellow;
+    }
+    #game-controls {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: rgba(26, 26, 46, 0.8);
+      padding: 10px 0;
+      z-index: 101;
+      display: none;
+      text-align: center;
+    }
+    #game-controls button {
+      display: inline-block;
+      width: auto;
+      padding: 8px 15px;
+      margin: 0 5px;
+      font-size: 14px;
+    }
+    #hud {
+      position: fixed;
+      top: 50px;
+      left: 0;
+      width: 100%;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: var(--primary-bg-color);
+      padding: 10px;
+      z-index: 100;
+      display: none;
+      font-family: var(--font-family);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+    #game-container {
+      position: relative;
+      width: 100%;
+      height: calc(100% - 100px);
+      min-height: 600px;
+      overflow: hidden;
+      background-color: var(--tertiary-bg-color);
+      border: 2px solid var(--secondary-color);
+      box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+    }
+  
+
+
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+    @media (max-width: 600px) {
+      #game-title {
+        font-size: 1.5em;
+      }
+      button {
+        font-size: 16px;
+      }
+      #game-controls button {
+        font-size: 12px;
+        padding: 6px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Puzzle Screen -->
+  <audio id="homeMusic" src="intromusic.wav" loop></audio>
+  <audio id="gameMusic" src="gamemusic.wav" loop></audio>
+  <audio id="loseMusic" src="losemusic.wav"></audio>
+  <audio id="winMusic" src="winmusic.wav"></audio>
+
+
+
+
+  <div id="puzzle-screen" class="screen">
+    <h2>Solve the Puzzle to Win!</h2>
+    <div id="puzzle-wrapper">
+      <div id="puzzle-container"></div>
+      <div class="boundary boundary-right-top"></div>
+      <div class="boundary boundary-right-bottom"></div>
+      <div class="boundary boundary-bottom"></div>
+      <div class="boundary boundary-left"></div>
+      <div class="boundary boundary-top"></div>
+    </div>
+    <button id="puzzle-reset">Reset</button>
+  </div>
+
+  <!-- Splash Screen -->
+  <div id="splash-screen" class="screen active">
+    <h1>Jungle Survivor</h1>
+    <button onclick="hideSplash()">Start Game</button>
+  </div>
+
+  <!-- Game Controls and HUD (shown only during gameplay) -->
+  <div id="game-controls">
+    <button id="game-menu-button">Menu</button>
+    <button id="game-restart-button">Restart</button>
+    <button id="game-instructions-button">Instructions</button>
+  </div>
+  <div id="hud"></div>
+
+  <!-- Start Menu Screen -->
+  <div id="start-menu-screen" class="screen">
+    <div class="container">
+      <h1 id="game-title">Jungle Survivor</h1>
+      <button id="play-button">Play</button>
+      <button id="settings-button">Settings</button>
+      <button id="instructions-button">Instructions</button>
+    </div>
+  </div>
+
+  <!-- Settings Screen -->
+  <div id="settings-screen" class="screen">
+    <div class="container">
+      <h2>Settings</h2>
+      <button id="settings-back-button">Back</button>
+    </div>
+  </div>
+
+  <!-- Instructions Screen -->
+  <div id="instructions-screen" class="screen">
+    <div class="container">
+      <h2>Instructions</h2>
+      <h3>How to Play:</h3>
+      <ul>
+        <li>Use arrow keys or WASD to move the player.</li>
+        <li>Tap the screen to jump on mobile devices.</li>
+        <li>Swipe left/right to move on mobile devices.</li>
+      </ul>
+      <h3>Objective:</h3>
+      <ul>
+        <li>Reach the end of the level without falling.</li>
+      </ul>
+      <button id="instructions-back-button">Back</button>
+    </div>
+  </div>
+
+  <!-- Game Screen (where the actual platformer is rendered) -->
+  <div id="game-screen" class="screen">
+    <div id="game-container">
+      <canvas id="gameCanvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Win Screen -->
+  <div id="win-screen" class="screen">
+    <div class="container">
+        <h1>🎉 Congratulations! 🎉</h1>
+        <img src="comfy_tropy.png" alt="Trophy" style="width: 200px; height: auto; margin: 20px 0;" />
+        <p>You have successfully completed the level!</p>
+        <button id="win-play-again-button">Play Again</button>
+        <button id="win-main-menu-button">Main Menu</button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="game-over-screen" class="screen">
+      <div class="container">
+          <h1>💀 Game Over! 💀</h1>
+          <p>You lost the game.</p>
+          <button id="lose-play-again-button">Play Again</button>
+          <button id="lose-main-menu-button">Main Menu</button>
+      </div>
+  </div>
+
+  <script>
+    function hideSplash() {
+      var splashScreen = document.getElementById('splash-screen');
+      var startMenu = document.getElementById('start-menu-screen');
+      splashScreen.classList.remove('active');
+      startMenu.classList.add('active');
+      const music = document.getElementById('homeMusic');
+  if (music) {
+    music.play().catch((e) => {
+      console.log('Music play was prevented:', e);
+    });
+  }
+    }
+
+    
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const puzzleScreen = document.getElementById('puzzle-screen');
+      const puzzleContainer = document.getElementById('puzzle-container');
+      const puzzleReset = document.getElementById('puzzle-reset');
+
+      // Configuration for the puzzle blocks
+      let blocks = [];
+      let grid = Array(6).fill(null).map(() => Array(7).fill(null));
+
+      let activeBlock = null;
+      let isMouseDown = false;
+      let startMouseX = null;
+      let startMouseY = null;
+
+      // For touch
+      let startTouchX = null;
+      let startTouchY = null;
+
+      // Method to create a block for the puzzle game
+      function createBlock(id, x, y, length, isHorizontal, isMain) {
+        const block = document.createElement('div');
+        block.classList.add('block');
+        if (isMain) {
+          block.classList.add('main-block');
+        }
+        block.dataset.id = id;
+        block.dataset.x = x;
+        block.dataset.y = y;
+        block.dataset.length = length;
+        block.dataset.horizontal = isHorizontal;
+        block.dataset.main = isMain;
+
+        // Place the block in the grid
+        block.style.gridColumnStart = x + 1;
+        block.style.gridColumnEnd = x + 1 + (isHorizontal ? length : 1);
+        block.style.gridRowStart = y + 1;
+        block.style.gridRowEnd = y + 1 + (isHorizontal ? 1 : length);
+        puzzleContainer.appendChild(block);
+        blocks.push(block);
+
+        // Fill grid
+        for (let i = 0; i < length; i++) {
+          const gx = isHorizontal ? x + i : x;
+          const gy = isHorizontal ? y : y + i;
+          grid[gy][gx] = id;
+        }
+
+        // MOUSE EVENTS
+        block.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          activeBlock = block;
+          isMouseDown = true;
+          startMouseX = e.clientX;
+          startMouseY = e.clientY;
+        });
+      }
+
+      function clearBlockFromGrid(id) {
+        for (let row = 0; row < 6; row++) {
+          for (let col = 0; col < 7; col++) {
+            if (grid[row][col] === id) {
+              grid[row][col] = null;
+            }
+          }
+        }
+      }
+
+      function attemptSingleStep(block, direction) {
+        if (!block) return;
+        const isHorizontal = block.dataset.horizontal === 'true';
+        let x = parseInt(block.dataset.x);
+        let y = parseInt(block.dataset.y);
+        const length = parseInt(block.dataset.length);
+        const id = parseInt(block.dataset.id);
+
+        clearBlockFromGrid(id);
+
+        let newX = x;
+        let newY = y;
+
+        if (isHorizontal) {
+          if (direction === 'LEFT') {
+            if (x > 0 && grid[y][x - 1] === null) {
+              newX = x - 1;
+            }
+          } else if (direction === 'RIGHT') {
+            if (block.dataset.main === 'true') {
+              // If it's the main block:
+              if (x + length < 7 && grid[y][x + length] === null) {
+                // normal move within puzzle
+                newX = x + 1;
+              } else if (x + length === 7) {
+                // allow the main block to move out of the puzzle
+                newX = x + 1;
+              }
+            } else {
+              // normal block:
+              if (x + length < 7 && grid[y][x + length] === null) {
+                newX = x + 1;
+              }
+            }
+          }
+        } else {
+          if (direction === 'UP') {
+            if (y > 0 && grid[y - 1][x] === null) {
+              newY = y - 1;
+            }
+          } else if (direction === 'DOWN') {
+            if (y + length < 6 && grid[y + length][x] === null) {
+              newY = y + 1;
+            }
+          }
+        }
+
+        block.dataset.x = newX;
+        block.dataset.y = newY;
+
+        block.style.gridColumnStart = newX + 1;
+        block.style.gridColumnEnd = newX + 1 + (isHorizontal ? length : 1);
+        block.style.gridRowStart = newY + 1;
+        block.style.gridRowEnd = newY + 1 + (isHorizontal ? 1 : length);
+
+        // Re-mark grid.
+        for (let i = 0; i < length; i++) {
+          const gx = isHorizontal ? newX + i : newX;
+          const gy = isHorizontal ? newY : newY + i;
+          grid[gy][gx] = id;
+        }
+
+        // Check win condition
+        if (block.dataset.main === 'true' && isHorizontal && newX + length === 7) {
+          alert('Puzzle Solved! You Win!');
+          puzzleScreen.style.display = 'none';
+          game.ui.showWinScreen();
+        }
+      }
+
+      // Mouse up => interpret direction.
+      puzzleContainer.addEventListener('mouseup', (e) => {
+        if (!activeBlock || !isMouseDown) {
+          isMouseDown = false;
+          activeBlock = null;
+          return;
+        }
+        isMouseDown = false;
+        const dx = e.clientX - startMouseX;
+        const dy = e.clientY - startMouseY;
+
+        const isHorizontal = (activeBlock.dataset.horizontal === 'true');
+        let direction = '';
+
+        if (isHorizontal) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            direction = (dx < 0) ? 'LEFT' : 'RIGHT';
+          }
+        } else {
+          if (Math.abs(dy) > Math.abs(dx)) {
+            direction = (dy < 0) ? 'UP' : 'DOWN';
+          }
+        }
+        if (direction) {
+          attemptSingleStep(activeBlock, direction);
+        }
+        activeBlock = null;
+      });
+
+      // Also handle case user mouses up outside puzzle container.
+      document.body.addEventListener('mouseup', (e) => {
+        if (isMouseDown && activeBlock) {
+          // same logic if user released outside
+          const dx = e.clientX - startMouseX;
+          const dy = e.clientY - startMouseY;
+          const isHorizontal = (activeBlock.dataset.horizontal === 'true');
+          let direction = '';
+          if (isHorizontal) {
+            if (Math.abs(dx) > Math.abs(dy)) {
+              direction = (dx < 0) ? 'LEFT' : 'RIGHT';
+            }
+          } else {
+            if (Math.abs(dy) > Math.abs(dx)) {
+              direction = (dy < 0) ? 'UP' : 'DOWN';
+            }
+          }
+          if (direction) {
+            attemptSingleStep(activeBlock, direction);
+          }
+        }
+        isMouseDown = false;
+        activeBlock = null;
+      });
+
+      // TOUCH EVENTS for swipes
+      puzzleContainer.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          const touch = e.touches[0];
+          startTouchX = touch.clientX;
+          startTouchY = touch.clientY;
+          isMouseDown = true;
+          const target = document.elementFromPoint(touch.clientX, touch.clientY);
+          if (target && target.classList.contains('block')) {
+            activeBlock = target;
+          } else {
+            activeBlock = null;
+          }
+        }
+      }, {passive:false});
+
+      puzzleContainer.addEventListener('touchend', (e) => {
+        if (!activeBlock || !isMouseDown) {
+          isMouseDown = false;
+          activeBlock = null;
+          return;
+        }
+        isMouseDown = false;
+        const touch = e.changedTouches[0];
+        const dx = touch.clientX - startTouchX;
+        const dy = touch.clientY - startTouchY;
+
+        const isHorizontal = activeBlock.dataset.horizontal === 'true';
+        let direction = '';
+
+        if (isHorizontal) {
+          if (Math.abs(dx) > Math.abs(dy)) {
+            direction = (dx < 0) ? 'LEFT' : 'RIGHT';
+          }
+        } else {
+          if (Math.abs(dy) > Math.abs(dx)) {
+            direction = (dy < 0) ? 'UP' : 'DOWN';
+          }
+        }
+        if (direction) {
+          attemptSingleStep(activeBlock, direction);
+        }
+
+        activeBlock = null;
+      }, {passive:false});
+
+      function setupPuzzle() {
+        puzzleContainer.innerHTML = '';
+        blocks = [];
+        grid = Array(6).fill(null).map(() => Array(7).fill(null));
+        activeBlock = null;
+        isMouseDown = false;
+
+        // Redesigned block configuration for cleanliness and solvability
+        createBlock(1, 0, 2, 2, true, true); // Red block
+        createBlock(2, 0, 0, 2, false, false); // Block 1
+        createBlock(3, 2, 0, 3, true, false); // Block 2
+        createBlock(4, 5, 2, 2, false, false); // Block 3
+        createBlock(5, 5, 0, 2, true, false); // Block 4
+      }
+
+      puzzleReset.addEventListener('click', setupPuzzle);
+      window.showPuzzle = () => {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        puzzleScreen.classList.add('active');
+        setupPuzzle();
+      };
+
+    });
+
+    
+      document.addEventListener('DOMContentLoaded', () => {
+ 
+  // --- THEN CONTINUE YOUR GAME CODE ---
+
+      class GameUI {
+        constructor() {
+          this.startMenuScreen = document.getElementById('start-menu-screen');
+          this.settingsScreen = document.getElementById('settings-screen');
+          this.instructionsScreen = document.getElementById('instructions-screen');
+          this.gameScreen = document.getElementById('game-screen');
+          this.gameOverScreen = document.getElementById('game-over-screen');
+          this.winScreen = document.getElementById('win-screen'); 
+          this.gameControls = document.getElementById('game-controls');
+          this.hud = document.getElementById('hud');
+        }
+
+        swapToScreen(screen) {
+          document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+          screen.classList.add('active');
+          if (screen.id === 'game-screen') {
+            this.hud.style.display = 'block';
+            this.gameControls.style.display = 'block';
+          } else {
+            this.hud.style.display = 'none';
+            this.gameControls.style.display = 'none';
+          }
+        }
+
+        startGame() {
+          this.swapToScreen(this.gameScreen);
+          setTimeout(() => {
+            game.adjustCanvasSize();
+            game.resetGame();
+            requestAnimationFrame(game.gameLoop.bind(game));
+          }, 0);
+        }
+
+        showGameOverScreen() {
+          const gameMusic = document.getElementById('gameMusic');
+  const loseMusic = document.getElementById('loseMusic');
+
+  if (gameMusic) {
+    gameMusic.pause();
+  }
+
+  if (loseMusic) {
+    loseMusic.currentTime = 0;
+    loseMusic.play();
+  }
+
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  this.gameOverScreen.classList.add('active'); 
+  this.gameControls.style.display = 'none';
+  this.hud.style.display = 'none';
+
+
+}
+
+        showWinScreen() {
+          document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+          this.winScreen.classList.add('active');
+          this.gameControls.style.display = 'none';
+          this.hud.style.display = 'none';
+          const gameMusic = document.getElementById('gameMusic');
+          const winMusic = document.getElementById('winMusic');
+
+  if (gameMusic) {
+    gameMusic.pause();
+    gameMusic.currentTime = 0;
+  }
+  if (winMusic) {
+    winMusic.currentTime = 0;
+    winMusic.play();
+  }
+
+
+        }
+
+        mainMenu() {
+          this.swapToScreen(this.startMenuScreen);
+        }
+      }
+
+      class Game {
+        constructor() {
+          this.ui = new GameUI();
+          this.canvas = document.getElementById('gameCanvas');
+          this.ctx = this.canvas.getContext('2d');
+
+          // Configuration for scaling
+          this.DESIGN_WIDTH = 800;
+          this.DESIGN_HEIGHT = 600;
+
+          // Game state
+          this.running = false;
+          this.gameOver = false;
+          this.levelComplete = false;
+
+          // Timing and physics constants
+          this.lastFrameTime = performance.now();
+          this.spriteFrameDuration = 1000 / 24;
+          this.GRAVITY = 0.7; 
+          this.FRICTION = 0.5; 
+          this.playerJumpPower = 10; 
+
+          // Platform and scenery data
+          this.originalPlatforms = [
+            { x: 0,    y: 550, width: 300, height: 48, imgSrc: 'Terrain (16x16).png', terrain: true },
+            { x: 400,  y: 520, width: 180, height: 32, imgSrc: 'grass.png' },
+            { x: 750,  y: 520, width: 200, height: 32, imgSrc: 'grass.png' },
+            { x: 1000, y: 480, width: 70,  height: 32, imgSrc: 'grass.png' },
+            { x: 1100, y: 430, width: 70,  height: 32, imgSrc: 'grass.png' },
+            { x: 1250, y: 380, width: 60,  height: 32, imgSrc: 'grass.png' },
+            { x: 1370, y: 380, width: 60,  height: 32, imgSrc: 'grass.png' },
+            { x: 1490, y: 380, width: 60,  height: 32, imgSrc: 'grass.png' },
+            { x: 1250, y: 550, width: 300, height: 48, imgSrc: 'Terrain (16x16).png', terrain: true },
+            { x: 1670, y: 460, width: 100, height: 32, imgSrc: 'grass.png' },
+            { x: 1900, y: 550, width: 300, height: 48, imgSrc: 'Terrain (16x16).png', terrain: true },
+            { x: 2300, y: 530, width: 150, height: 32, imgSrc: 'grass.png' }
+          ];
+
+          // Internal copy for adjustments
+          this.platforms = JSON.parse(JSON.stringify(this.originalPlatforms));
+
+          // Scenery for start/end images
+          this.originalScenery = [
+            { x: 20,  y: 486, width: 64, height: 64, imgSrc: 'Start (Idle)_upscaled.png' },
+            { x: 2396, y: 466, width: 64, height: 64, imgSrc: 'End (Idle)_upscaled.png' }
+          ];
+          this.scenery = JSON.parse(JSON.stringify(this.originalScenery));
+
+          // Define camera after canvas is sized
+          this.camera = {
+            x: 0,
+            y: 0,
+            width: 800,
+            height: 600
+          };
+
+          // Player data
+          this.originalPlayer = {
+            x: 100,
+            y: 400,
+            width: 32,
+            height: 32,
+            speed: 4,
+            jumpPower: this.playerJumpPower // Updated jump power
+          };
+          this.player = JSON.parse(JSON.stringify(this.originalPlayer));
+          this.player.vx = 0;
+          this.player.vy = 0;
+          this.player.onGround = false;
+          this.player.animationFrame = 0;
+          this.player.lastAnimFrameTime = 0;
+          this.player.state = 'idle';
+          this.player.previousState = 'idle';
+
+          this.keys = { left: false, right: false, up: false, restart: false };
+
+          // Checkpoint for start and end
+          this.startCheckpoint = {
+            x: 20,
+            y: 486,
+            width: 64,
+            height: 64,
+            animationFrame: 0,
+            totalFrames: 17,
+            sprite: new Image()
+          };
+          this.startCheckpoint.sprite.src = "Start (Moving) (64x64).png";
+
+          this.endCheckpoint = {
+            x: 2396,
+            y: 466,
+            width: 64,
+            height: 64,
+            animationFrame: 0,
+            totalFrames: 8,
+            sprite: new Image()
+          };
+          this.endCheckpoint.sprite.src = "End (Pressed) (64x64).png";
+
+          // Load sprite images
+          this.backgroundImg = new Image();
+          this.backgroundImg.src = 'comfy_background.png';
+          this.runSpriteSheet = new Image();
+          this.runSpriteSheet.src = 'Run_upscaled.png';
+          this.idleSpriteSheet = new Image();
+          this.idleSpriteSheet.src = 'Idle_upscaled.png';
+          this.jumpSpriteSheet = new Image();
+          this.jumpSpriteSheet.src = 'Jump_upscaled.png';
+          this.fallSpriteSheet = new Image();
+          this.fallSpriteSheet.src = 'Fall_upscaled.png';
+          this.terrainSpriteSheet = new Image();
+          this.terrainSpriteSheet.src = 'Terrain (16x16).png';
+          this.grassTile = new Image();
+          this.grassTile.src = "grass.png";
+          this.landTile = new Image();
+          this.landTile.src = "land.png"; 
+          this.platformImages = {};
+          this.sceneryImages = {};
+
+          this.FRAMES = {
+            run: 12,
+            idle: 11,
+            jump: 1,
+            fall: 1
+          };
+
+          this.bindKeyboardEvents();
+          this.initTouchControls();
+        }
+
+        adjustCanvasSize() {
+          const container = document.getElementById('game-container');
+          if (!container) {
+            console.error('#game-container not found!');
+            return;
+          }
+          const rect = container.getBoundingClientRect();
+
+          this.canvas.width = rect.width;
+          this.canvas.height = rect.height;
+          this.camera.width = this.canvas.width;
+          this.camera.height = this.canvas.height;
+
+          const scaleX = this.canvas.width / this.DESIGN_WIDTH;
+          const scaleY = this.canvas.height / this.DESIGN_HEIGHT;
+
+          // Rebuild platforms
+          this.platforms = this.originalPlatforms.map((pf) => {
+            return {
+              x: pf.x * scaleX,
+              y: pf.y * scaleY,
+              width: pf.width * scaleX,
+              height: pf.height * scaleY,
+              imgSrc: pf.imgSrc,
+              terrain: pf.terrain || false
+            };
+          });
+
+          const lastPF = this.originalPlatforms[this.originalPlatforms.length - 1];
+          const theoreticalEnd = (lastPF.x + lastPF.width + 100) * scaleX;
+          this.levelWidth = Math.max(2800 * scaleX, theoreticalEnd);
+
+          this.player.x = this.originalPlayer.x * scaleX;
+          this.player.y = this.originalPlayer.y * scaleY;
+          this.player.width = this.originalPlayer.width * scaleX;
+          this.player.height = this.originalPlayer.height * scaleY;
+
+          this.player.speed = this.originalPlayer.speed * scaleX * 1.2;
+          this.player.jumpPower = this.originalPlayer.jumpPower * scaleY * 1.2;
+
+          this.scenery = this.originalScenery.map(obj => ({
+            x: obj.x * scaleX,
+            y: obj.y * scaleY,
+            width: obj.width * scaleX,
+            height: obj.height * scaleY,
+            imgSrc: obj.imgSrc
+          }));
+        }
+
+        bindKeyboardEvents() {
+          window.addEventListener('keydown', e => {
+            switch (e.code) {
+              case 'ArrowLeft':
+              case 'KeyA':
+                this.keys.left = true;
+                break;
+              case 'ArrowRight':
+              case 'KeyD':
+                this.keys.right = true;
+                break;
+              case 'ArrowUp':
+              case 'Space':
+              case 'KeyW':
+                this.keys.up = true;
+                break;
+              case 'KeyR':
+                this.keys.restart = true;
+                break;
+            }
+          });
+          window.addEventListener('keyup', e => {
+            switch (e.code) {
+              case 'ArrowLeft':
+              case 'KeyA':
+                this.keys.left = false;
+                break;
+              case 'ArrowRight':
+              case 'KeyD':
+                this.keys.right = false;
+                break;
+              case 'ArrowUp':
+              case 'Space':
+              case 'KeyW':
+                this.keys.up = false;
+                break;
+              case 'KeyR':
+                this.keys.restart = false;
+                break;
+            }
+          });
+        }
+
+        initTouchControls() {
+          // Basic mobile controls for platformer
+          this.canvas.addEventListener('touchstart', this.handleTouchStart.bind(this), false);
+          this.canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), false);
+          this.canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), false);
+        }
+
+        handleTouchStart(event) {
+          if (!this.running) return;
+          event.preventDefault();
+          this.keys.up = true;
+          const touch = event.touches[0];
+          this.touchStartX = touch.clientX;
+        }
+        handleTouchMove(event) {
+          if (!this.running) return;
+          event.preventDefault();
+          const touch = event.touches[0];
+          const deltaX = touch.clientX - this.touchStartX;
+          const threshold = 30;
+          if (Math.abs(deltaX) > threshold) {
+            if (deltaX < 0) {
+              this.keys.left = true;
+              this.keys.right = false;
+            } else {
+              this.keys.right = true;
+              this.keys.left = false;
+            }
+          }
+        }
+        handleTouchEnd(event) {
+          if (!this.running) return;
+          event.preventDefault();
+          this.keys.left = false;
+          this.keys.right = false;
+          this.keys.up = false;
+        }
+
+        resetGame() {
+          this.running = true;
+          this.gameOver = false;
+          this.levelComplete = false;
+
+          this.player.vx = 0;
+          this.player.vy = 0;
+          this.player.onGround = false;
+          this.player.animationFrame = 0;
+          this.player.state = 'idle';
+          this.player.previousState = 'idle';
+          this.startCheckpoint.animationFrame = 0
+          this.endCheckpoint.animationFrame = 0
+        }
+
+        gameLoop(timestamp) {
+          if (!this.running) return; // Exit if game isn't running
+          this.updateGame();
+          this.drawGame();
+          requestAnimationFrame(this.gameLoop.bind(this));
+        }
+
+        updateGame() {
+          if ((this.gameOver || this.levelComplete) && this.keys.restart) {
+            this.resetGame();
+            this.keys.restart = false;
+          }
+          if (this.gameOver || this.levelComplete) {
+            return; // Return if game over or level complete
+          }
+
+          // Horizontal movement
+          if (this.keys.left) {
+            this.player.vx = -this.player.speed;
+            if (this.player.onGround) {
+              this.player.state = 'run';
+            }
+          } else if (this.keys.right) {
+            this.player.vx = this.player.speed;
+            if (this.player.onGround) {
+              this.player.state = 'run';
+            }
+          } else {
+            this.player.vx *= this.FRICTION;
+            if (Math.abs(this.player.vx) < 0.1) {
+              this.player.vx = 0;
+              if (this.player.onGround) {
+                this.player.state = 'idle';
+              }
+            }
+          }
+
+          // Jump mechanism
+          if (this.keys.up && this.player.onGround) {
+            this.player.vy = -this.player.jumpPower;
+            this.player.onGround = false;
+            this.player.state = 'jump';
+          }
+
+          // Gravity effects
+          this.player.vy += this.GRAVITY;
+
+          // Update player position
+          this.player.x += this.player.vx;
+          this.player.y += this.player.vy;
+
+          // Clamp vertical position
+          if (this.player.y < 0) {
+            this.player.y = 0;
+            this.player.vy = 0;
+          }
+
+          // State detection for jump/fall
+          if (!this.player.onGround) {
+            if (this.player.vy > 0) {
+              this.player.state = 'fall';
+            } else if (this.player.vy < 0) {
+              this.player.state = 'jump';
+            }
+          }
+
+          if (this.player.state !== this.player.previousState) {
+            this.player.animationFrame = 0;
+            this.player.previousState = this.player.state;
+          }
+
+          // Check for collisions with platforms
+          this.player.onGround = false;
+          for (let pf of this.platforms) {
+            if (
+              this.player.x < pf.x + pf.width &&
+              this.player.x + this.player.width > pf.x
+            ) {
+              // Check vertical collisions
+              if (
+                this.player.y + this.player.height > pf.y &&
+                this.player.y + this.player.height < pf.y + pf.height &&
+                this.player.vy >= 0
+              ) {
+                this.player.y = pf.y - this.player.height;
+                this.player.vy = 0;
+                this.player.onGround = true;
+                if (this.player.state === 'fall') {
+                  this.player.state = 'idle';
+                }
+              }
+            }
+          }
+
+          // Clamp horizontal position
+          if (this.player.x < 0) {
+            this.player.x = 0;
+          }
+          if (this.player.x + this.player.width > this.levelWidth) {
+            this.player.x = this.levelWidth - this.player.width;
+          }
+
+          // Check if the player has fallen off the screen
+          if (this.player.y > this.canvas.height + 100) {
+            this.gameOver = true;
+            this.running = false;
+            this.ui.showGameOverScreen();
+          }
+
+          // Check for level completion
+          const lastPF = this.platforms[this.platforms.length - 1];
+          if (this.player.x + this.player.width >= lastPF.x + lastPF.width) {
+            this.levelComplete = true;
+            this.running = false;
+            window.showPuzzle();
+          }
+
+          // Update camera position
+          this.camera.x = this.player.x - (this.camera.width / 2) + (this.player.width / 2);
+          if (this.camera.x < 0) this.camera.x = 0;
+          if (this.camera.x + this.camera.width > this.levelWidth) {
+            this.camera.x = this.levelWidth - this.camera.width;
+          }
+
+          const currentTime = performance.now();
+          const frameDuration = 100; // You can tweak this per state later if needed
+
+          if (currentTime - this.player.lastAnimFrameTime > frameDuration) {
+            const totalFrames = this.FRAMES[this.player.state] || 1;
+            this.player.animationFrame = (this.player.animationFrame + 1) % totalFrames;
+            this.player.lastAnimFrameTime = currentTime;
+          }
+
+        }
+
+        drawGame() {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.drawBackground();
+
+          // Draw platforms
+          for (let pf of this.platforms) {
+            this.drawPlatform(pf);
+          }
+
+          // Draw start/end images
+          this.drawScenery();
+
+          if (!this.gameOver && !this.levelComplete) {
+            this.drawPlayer();
+          }
+        }
+
+        drawBackground() {
+          if (this.backgroundImg.complete && this.backgroundImg.naturalWidth > 0) {
+            this.ctx.drawImage(
+              this.backgroundImg,
+              0,
+              0,
+              this.canvas.width,
+              this.canvas.height
+            );
+          } else {
+            const grad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+            grad.addColorStop(0, '#228B22');
+            grad.addColorStop(1, '#006400');
+            this.ctx.fillStyle = grad;
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+          }
+        }
+
+        drawPlatform(pf) {
+          const screenX = Math.round(pf.x - this.camera.x);
+          const screenY = Math.round(pf.y);
+          const intW = Math.round(pf.width);
+          const intH = Math.round(pf.height);
+
+          if (pf.terrain) {
+            // Draw grass tile and land tile below
+            const GRASS_W = 46, GRASS_H = 42;
+            for (let x = 0; x < intW; x += GRASS_W) {
+              const chunkW = Math.min(GRASS_W, intW - x);
+              this.ctx.drawImage(
+                this.grassTile,
+                0, 0,
+                chunkW, GRASS_H,
+                screenX + x, screenY,
+                chunkW, GRASS_H
+              );
+            }
+
+            const leftoverH = intH - GRASS_H;
+            if (leftoverH > 0) {
+              const LAND_W = 46, LAND_H = 29;
+              for (let tileY = GRASS_H; tileY < intH; tileY += LAND_H) {
+                const chunkH = Math.min(LAND_H, intH - tileY);
+                for (let tileX = 0; tileX < intW; tileX += LAND_W) {
+                  const chunkW = Math.min(LAND_W, intW - tileX);
+                  this.ctx.drawImage(
+                    this.landTile,
+                    0, 0,
+                    chunkW, chunkH,
+                    screenX + tileX, screenY + tileY,
+                    chunkW, chunkH
+                  );
+                }
+              }
+            }
+          } else {
+            // Handle normal platform rendering
+            const key = pf.imgSrc;
+            if (!this.platformImages[key]) {
+              const newImg = new Image();
+              newImg.src = key;
+              this.platformImages[key] = newImg;
+            }
+            const img = this.platformImages[key];
+
+            // Draw the platform tiles
+            if (img.complete && img.naturalWidth > 0) {
+              const TILE_WIDTH = 32;
+              const TILE_HEIGHT = 32;
+
+              for (let tileY = 0; tileY < intH; tileY += TILE_HEIGHT) {
+                const chunkH = Math.min(TILE_HEIGHT, intH - tileY);
+                for (let tileX = 0; tileX < intW; tileX += TILE_WIDTH) {
+                  const chunkW = Math.min(TILE_WIDTH, intW - tileX);
+                  this.ctx.drawImage(
+                    img,
+                    0, 0,
+                    chunkW, chunkH,
+                    screenX + tileX, screenY + tileY,
+                    chunkW, chunkH
+                  );
+                }
+              }
+            } else {
+              // If we can't load the platform image, fill with gray
+              this.ctx.fillStyle = '#888';
+              this.ctx.fillRect(screenX, screenY, intW, intH);
+            }
+          }
+        }
+
+        drawScenery() {
+          for (let obj of this.scenery) {
+            if (!this.sceneryImages[obj.imgSrc]) {
+              const newImg = new Image();
+              newImg.src = obj.imgSrc;
+              this.sceneryImages[obj.imgSrc] = newImg;
+            }
+            const img = this.sceneryImages[obj.imgSrc];
+            if (img.complete && img.naturalWidth > 0) {
+              const screenX = Math.round(obj.x - this.camera.x);
+              const screenY = Math.round(obj.y);
+              const w = Math.round(obj.width);
+              const h = Math.round(obj.height);
+              this.ctx.drawImage(img, screenX, screenY, w, h);
+            }
+          }
+        }
+
+        drawPlayer() {
+          const screenX = Math.round(this.player.x - this.camera.x);
+          const screenY = Math.round(this.player.y);
+          const w = Math.round(this.player.width);
+          const h = Math.round(this.player.height);
+
+          const SPRITE_SIZE = 128;
+          const frameX = this.player.animationFrame * SPRITE_SIZE;
+
+          let sheet = null;
+          switch (this.player.state) {
+            case 'run':
+              sheet = this.runSpriteSheet;
+              break;
+            case 'idle':
+              sheet = this.idleSpriteSheet;
+              break;
+            case 'jump':
+              sheet = this.jumpSpriteSheet;
+              break;
+            case 'fall':
+              sheet = this.fallSpriteSheet;
+              break;
+          }
+
+          if (sheet && sheet.complete && sheet.naturalWidth > 0) {
+            if (this.player.state === 'jump' || this.player.state === 'fall') {
+              this.ctx.drawImage(
+                sheet,
+                0, 0,
+                SPRITE_SIZE, SPRITE_SIZE,
+                screenX, screenY,
+                w, h
+              );
+            } else {
+              this.ctx.drawImage(
+                sheet,
+                frameX, 0,
+                SPRITE_SIZE, SPRITE_SIZE,
+                screenX, screenY,
+                w, h
+              );
+            }
+          } else {
+            this.ctx.fillStyle = '#FFD700';
+            this.ctx.fillRect(screenX, screenY, w, h);
+          }
+        }
+      }
+
+      const game = new Game();
+      window.game = game;
+
+      game.adjustCanvasSize();
+      window.addEventListener('resize', () => {
+        game.adjustCanvasSize();
+      });
+
+      // UI interaction bindings
+      document.getElementById('win-play-again-button')
+        .addEventListener('click', () => {
+          game.ui.startGame();
+        });
+
+      document.getElementById('win-main-menu-button')
+        .addEventListener('click', () => {
+          game.ui.mainMenu();
+        });
+
+      document.getElementById('lose-play-again-button')
+        .addEventListener('click', () => {
+          const loseMusic = document.getElementById('loseMusic');
+    const gameMusic = document.getElementById('gameMusic');
+
+    if (loseMusic) {
+      loseMusic.pause();
+      loseMusic.currentTime = 0;
+    }
+    if (gameMusic) {
+      gameMusic.currentTime = 0;
+      gameMusic.play();
+    }
+          game.ui.startGame();
+        });
+
+      document.getElementById('lose-main-menu-button')
+        .addEventListener('click', () => {
+          game.ui.mainMenu();
+        });
+
+      document.getElementById('play-button').addEventListener('click', () => {
+        const music = document.getElementById('homeMusic');
+        const gameMusic = document.getElementById('gameMusic');
+  if (music) {
+    music.pause();
+    music.currentTime = 0;
+  }
+  if (gameMusic) {
+    gameMusic.currentTime = 0;
+    gameMusic.play();
+  }
+
+        game.ui.startGame();
+      });
+
+      document.getElementById('settings-button').addEventListener('click', () => {
+        game.ui.swapToScreen(game.ui.settingsScreen);
+      });
+      document.getElementById('instructions-button').addEventListener('click', () => {
+        game.ui.swapToScreen(game.ui.instructionsScreen);
+      });
+      document.getElementById('settings-back-button').addEventListener('click', () => {
+        game.ui.swapToScreen(game.ui.startMenuScreen);
+      });
+      document.getElementById('instructions-back-button').addEventListener('click', () => {
+        game.ui.swapToScreen(game.ui.startMenuScreen);
+      });
+
+      document.getElementById('game-menu-button').addEventListener('click', () => {
+        game.running = false;
+        game.ui.mainMenu();
+      });
+      document.getElementById('game-restart-button').addEventListener('click', (e) => {
+        e.target.blur();
+        game.ui.swapToScreen(game.ui.gameScreen);
+        setTimeout(() => {
+          game.adjustCanvasSize();
+          game.resetGame();
+        }, 0);
+      });
+      document.getElementById('game-instructions-button').addEventListener('click', () => {
+        game.running = false;
+        game.ui.swapToScreen(game.ui.instructionsScreen);
+      });
+    });
+  </script>
+</body>
+</html>
+```
